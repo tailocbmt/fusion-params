@@ -4,8 +4,13 @@ from models import model_builder
 from utils import read_config
 import argparse
 import pandas as pd
+import ast
 
-
+def scheduler(epoch, lr):
+    if epoch < 20:
+        return lr
+    else:
+        return lr * tf.math.exp(-0.1)
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -27,52 +32,66 @@ def main():
 
     configs = read_config(args.config)
 
+
     train = pd.read_csv(configs['path']['train'])
+    val = pd.read_csv(configs['path']['val'])
+    test = pd.read_csv(configs['path']['test'])
 
-    train_gen = ImageDataGenerator(**configs['preprocess']['train'])
+    train['label'] = train['label'].astype('str')
+    val['label'] = val['label'].astype('str')
+    test['label'] = test['label'].astype('str')
 
-    val_gen = ImageDataGenerator(**configs['preprocess']['test'])
+    train_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['train']))
 
-    test_gen = ImageDataGenerator(**configs['preprocess']['test'])
+    val_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
 
-    training_data = train_gen.flow_from_dataframe(directory=args.dir,
+    test_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
+
+    training_data = train_gen.flow_from_dataframe(dataframe=train,
+                                                directory=args.dir,
                                                 shuffle=True,
                                                 x_col='filename',
                                                 y_col='label',
-                                                batch_size=configs['train_cfg']['batch_size'],
-                                                target_size=configs['train_cfg']['target_shape'])
+                                                class_mode="categorical",
+                                                batch_size=int(configs['train_cfg']['batch_size']),
+                                                target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
-    validation_data = val_gen.flow_from_dataframe(directory=args.dir,
+    validation_data = val_gen.flow_from_dataframe(dataframe=val,
+                                                directory=args.dir,
                                                 shuffle=True,
                                                 x_col='filename',
                                                 y_col='label',
-                                                batch_size=configs['train_cfg']['batch_size'],
-                                                target_size=configs['train_cfg']['target_shape'])
+                                                class_mode="categorical",
+                                                batch_size=int(configs['train_cfg']['batch_size']),
+                                                target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
-    test_data = test_gen.flow_from_dataframe(directory=args.dir,
+    test_data = test_gen.flow_from_dataframe(dataframe=test,
+                                            directory=args.dir,
                                             x_col='filename',
                                             y_col='label',
-                                            batch_size=configs['train_cfg']['batch_size'],
-                                            target_size=configs['train_cfg']['target_shape'])
-
+                                            class_mode="categorical",
+                                            batch_size=int(configs['train_cfg']['batch_size']),
+                                            target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
     history_logger = tf.keras.callbacks.CSVLogger(configs['path']['logs'], separator=",", append=True)
 
     tb_callback = tf.keras.callbacks.TensorBoard(configs['path']['tfboard'], update_freq=1)
 
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-                                                filepath=configs['path']['checkpoint'],
+                                                filepath=configs['path']['checkpoint']+configs['train_cfg']['backbone'],
                                                 save_weights_only=True,
-                                                monitor='val_accuracy',
+                                                monitor='val_acc',
                                                 mode='max',
                                                 save_best_only=True)
+
+    lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=0)
 
     model = model_builder(configs['train_cfg']['backbone'])
 
     if configs['opt_cfg']['opt'] == 'adam':
-        opt = tf.keras.optimizer.Adam(learning_rate=configs['opt_cfg']['lr'])
+        opt = tf.keras.optimizers.Adam(learning_rate=float(configs['opt_cfg']['lr']))
     elif configs['opt_cfg']['opt'] == 'sgd':
-        opt = tf.keras.optimizer.SGD(learning_rate=configs['opt_cfg']['lr'])
+        opt = tf.keras.optimizers.SGD(learning_rate=float(configs['opt_cfg']['lr']))
     else:
         raise ValueError('Not support other type of optimizer') 
 
@@ -81,9 +100,9 @@ def main():
     model.compile(optimizer=opt, loss=loss, metrics='acc')
 
     history = model.fit(training_data,
-                        epochs=configs['train_cfg']['epochs'],
+                        epochs=int(configs['train_cfg']['epochs']),
                         validation_data=validation_data,
-                        callbacks=[history_logger, tb_callback, model_checkpoint])
+                        callbacks=[history_logger, tb_callback, model_checkpoint, lr_schedule])
     
     results = model.evaluate(test_data)
     print("test loss, test acc:", results)
