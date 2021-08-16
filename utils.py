@@ -1,5 +1,5 @@
 from configparser import ConfigParser
-
+import tensorflow as tf
 
 def write_config(names, *args):
     config_obj = ConfigParser()
@@ -14,6 +14,7 @@ def read_config(config_path):
     config_obj = ConfigParser()
     config_obj.read(config_path)
     return config_obj
+
 
 # preprocess
 # preprocess_cfgs = dict(

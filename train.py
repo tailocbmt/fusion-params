@@ -1,6 +1,6 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
-from models import model_builder
+from models import model_builder, update_params
 from utils import read_config
 import argparse
 import pandas as pd
@@ -78,15 +78,13 @@ def main():
     tb_callback = tf.keras.callbacks.TensorBoard(configs['path']['tfboard'], update_freq=1)
 
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-                                                filepath=configs['path']['checkpoint']+configs['train_cfg']['backbone'],
+                                                filepath=configs['train_cfg']['backbone']+configs['path']['checkpoint'],
                                                 save_weights_only=True,
                                                 monitor='val_acc',
                                                 mode='max',
                                                 save_best_only=True)
 
     lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=0)
-
-    model = model_builder(configs['train_cfg']['backbone'])
 
     if configs['opt_cfg']['opt'] == 'adam':
         opt = tf.keras.optimizers.Adam(learning_rate=float(configs['opt_cfg']['lr']))
@@ -96,16 +94,26 @@ def main():
         raise ValueError('Not support other type of optimizer') 
 
     loss=tf.keras.losses.CategoricalCrossentropy()
-
-    model.compile(optimizer=opt, loss=loss, metrics='acc')
-
-    history = model.fit(training_data,
-                        epochs=int(configs['train_cfg']['epochs']),
-                        validation_data=validation_data,
-                        callbacks=[history_logger, tb_callback, model_checkpoint, lr_schedule])
     
-    results = model.evaluate(test_data)
+    fusion_model = model_builder(configs['train_cfg']['backbone'])
+    fusion_model.compile(optimizer=opt, loss=loss, metrics='acc')
+
+    models_dict = {}
+    for i in range(1,4):
+        models_dict['model_{}'.format(i)] = model_builder(configs['train_cfg']['backbone'])
+        models_dict['model_{}'.format(i)].compile(optimizer=opt, loss=loss, metrics='acc')
+    
+    
+    for i in range(1,4):
+        history = models_dict['model_{}'.format(i)].fit(training_data,
+                                                        epochs=int(configs['train_cfg']['epochs']),
+                                                        validation_data=validation_data,
+                                                        callbacks=[history_logger, tb_callback, model_checkpoint, lr_schedule])
+
+    fusion_model = update_params(fusion_model, models_dict['model_1'], models_dict['model_1'], models_dict['model_1'], mode='equal')
+        
+    results = fusion_model.evaluate(test_data)
     print("test loss, test acc:", results)
-    
+        
 if __name__== '__main__':
     main()
