@@ -73,17 +73,6 @@ def main():
                                             batch_size=int(configs['train_cfg']['batch_size']),
                                             target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
-    history_logger = tf.keras.callbacks.CSVLogger(configs['path']['logs'], separator=",", append=True)
-
-    tb_callback = tf.keras.callbacks.TensorBoard(configs['path']['tfboard'], update_freq=1)
-
-    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-                                                filepath=configs['train_cfg']['backbone']+configs['path']['checkpoint'],
-                                                save_weights_only=True,
-                                                monitor='val_acc',
-                                                mode='max',
-                                                save_best_only=True)
-
     lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=0)
 
     if configs['opt_cfg']['opt'] == 'adam':
@@ -105,6 +94,18 @@ def main():
     
     
     for i in range(1,4):
+        save_path = configs['path']['directory'] + configs['train_cfg']['backbone'] + '/model_{}/'.format(i)
+
+        history_logger = tf.keras.callbacks.CSVLogger(save_path+configs['path']['logs'], separator=",", append=True)
+
+        tb_callback = tf.keras.callbacks.TensorBoard(save_path+configs['path']['tfboard'], update_freq=1)
+
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+                                                    filepath=save_path+configs['path']['checkpoint'],
+                                                    save_weights_only=True,
+                                                    monitor='val_acc',
+                                                    mode='max')
+
         history = models_dict['model_{}'.format(i)].fit(training_data,
                                                         epochs=int(configs['train_cfg']['epochs']),
                                                         validation_data=validation_data,

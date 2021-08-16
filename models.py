@@ -21,12 +21,12 @@ def model_builder(name, input_shape=(224, 224, 3), include_top=False, weights='i
     
     return Model(inputs=base_model.input, outputs=predictions) 
 
-model = model_builder('resnet')
-model.summary()
-for i in range(len(model.layers)):
-    if model.layers[i].name.endswith('conv'):
-        for j in model.layers[i].get_weights():
-            print(j.shape)
+# model = model_builder('inception')
+# model.summary()
+# for i in range(len(model.layers)):
+#     if model.layers[i].name.endswith('conv'):
+#         for j in model.layers[i].get_weights():
+#             print(j.shape)
 
 def update_params(fusion_model, model_1, model_2, model_3, mode='equal', decay_rate=None):
     if mode == 'equal':
@@ -41,7 +41,7 @@ def update_params(fusion_model, model_1, model_2, model_3, mode='equal', decay_r
     
     num_layer = len(fusion_model.layers)
     for i in range(num_layer):
-        if 'conv' in fusion_model.layers[i].name or 'dense' in fusion_model.layers[i].name:
+        if 'conv2d' in fusion_model.layers[i].name or '_conv' in fusion_model.layers[i].name or 'dense' in fusion_model.layers[i].name:
             params_1 = model_1.layers[i].get_weights() 
             params_2 = model_2.layers[i].get_weights() 
             params_3 = model_3.layers[i].get_weights()
