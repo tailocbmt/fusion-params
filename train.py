@@ -89,6 +89,13 @@ def main():
     
     models_dict = {}    
     for i in range(1,4):
+        if configs['opt_cfg']['opt'] == 'adam':
+            opt = tf.keras.optimizers.Adam(learning_rate=float(configs['opt_cfg']['lr']))
+        elif configs['opt_cfg']['opt'] == 'sgd':
+            opt = tf.keras.optimizers.SGD(learning_rate=float(configs['opt_cfg']['lr']))
+        else:
+            raise ValueError('Not support other type of optimizer')
+
         models_dict['model_{}'.format(i)] = model_builder(configs['train_cfg']['backbone'])
         models_dict['model_{}'.format(i)].compile(optimizer=opt, loss=loss, metrics='acc')
 
