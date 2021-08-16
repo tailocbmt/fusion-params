@@ -85,15 +85,13 @@ def main():
     loss=tf.keras.losses.CategoricalCrossentropy()
     
     fusion_model = model_builder(configs['train_cfg']['backbone'])
-    fusion_model.compile(optimizer=opt, loss=loss, metrics='acc')
-
-    models_dict = {}
+    fusion_model.compile(optimizer=opt, loss=loss, metrics='acc')  
+    
+    models_dict = {}    
     for i in range(1,4):
         models_dict['model_{}'.format(i)] = model_builder(configs['train_cfg']['backbone'])
         models_dict['model_{}'.format(i)].compile(optimizer=opt, loss=loss, metrics='acc')
-    
-    
-    for i in range(1,4):
+
         save_path = configs['path']['directory'] + configs['train_cfg']['backbone'] + '/model_{}/'.format(i)
 
         history_logger = tf.keras.callbacks.CSVLogger(save_path+configs['path']['logs'], separator=",", append=True)
