@@ -15,7 +15,11 @@ def read_config(config_path):
     config_obj.read(config_path)
     return config_obj
 
-
+def scheduler(epoch, lr):
+    if epoch < 20:
+        return lr
+    else:
+        return lr * tf.math.exp(-0.1)
 # preprocess
 # preprocess_cfgs = dict(
 #     train = dict(rotation_range=15,

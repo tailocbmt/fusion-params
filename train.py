@@ -1,16 +1,11 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 from models import model_builder, update_params
-from utils import read_config
+from utils import read_config, scheduler
 import argparse
 import pandas as pd
 import ast
 
-def scheduler(epoch, lr):
-    if epoch < 20:
-        return lr
-    else:
-        return lr * tf.math.exp(-0.1)
 
 def args_parser():
     parser = argparse.ArgumentParser()
