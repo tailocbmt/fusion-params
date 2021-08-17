@@ -27,7 +27,6 @@ def main():
 
     configs = read_config(args.config)
 
-
     train = pd.read_csv(configs['path']['train'])
     val = pd.read_csv(configs['path']['val'])
     test = pd.read_csv(configs['path']['test'])

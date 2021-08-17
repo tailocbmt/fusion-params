@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 import tensorflow as tf
+import ast
 
 def write_config(names, *args):
     config_obj = ConfigParser()
@@ -13,6 +14,7 @@ def write_config(names, *args):
 def read_config(config_path):
     config_obj = ConfigParser()
     config_obj.read(config_path)
+    config_obj = change_type(config_obj)
     return config_obj
 
 def scheduler(epoch, lr):
@@ -20,6 +22,18 @@ def scheduler(epoch, lr):
         return lr
     else:
         return lr * tf.math.exp(-0.1)
+
+def change_type(configs):
+    for k1,v1 in configs.items():
+        if k1 == 'path':
+            continue
+        for c in v1:
+            for k2 in c.keys():
+                if k2 == 'backbone' or k2 == 'opt':
+                    continue
+                else:
+                    configs[k2] = ast.literal_eval(configs[k2])
+    return configs
 # preprocess
 # preprocess_cfgs = dict(
 #     train = dict(rotation_range=15,

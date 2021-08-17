@@ -50,7 +50,7 @@ def main():
     for i in range(1,int(configs['train_cfg']['epochs'])+1):
         
         for j in range(1,num_of_models+1):
-            epoch_checkpoint = os.path.join(models_dict['model_{}'.format(j)]['checkpoint'], 'cp-{:04d}.ckpt'.format(j))
+            epoch_checkpoint = os.path.join(models_dict['model_{}'.format(j)]['checkpoint'], 'cp-{:04d}.ckpt'.format(i))
             print(epoch_checkpoint)
             models_dict['model_{}'.format(j)]['weights'].load_weights(epoch_checkpoint)
         
