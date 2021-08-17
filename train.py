@@ -84,8 +84,7 @@ def main():
 
     loss=tf.keras.losses.CategoricalCrossentropy()
     
-    fusion_model = model_builder(configs['train_cfg']['backbone'])
-    fusion_model.compile(optimizer=opt, loss=loss, metrics='acc')  
+      
     
     models_dict = {}    
     for i in range(1,4):
@@ -115,7 +114,10 @@ def main():
                                                         epochs=int(configs['train_cfg']['epochs']),
                                                         validation_data=validation_data,
                                                         callbacks=[history_logger, tb_callback, model_checkpoint, lr_schedule])
-
+    
+    fusion_model = tf.keras.models.clone_model(models_dict['model_1'])
+    fusion_model.compile(optimizer=opt, loss=loss, metrics='acc')
+    fusion_model.set_weights(models_dict['model_1'].get_weights())
     fusion_model = update_params(fusion_model, models_dict['model_1'], models_dict['model_1'], models_dict['model_1'], mode='equal')
         
     results = fusion_model.evaluate(test_data)
