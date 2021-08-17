@@ -5,7 +5,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import pandas as pd
 import argparse
 import os
-import ast
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -37,17 +36,17 @@ def main():
 
     result = []
     test = pd.read_csv(configs['path']['test'])
-    test_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
+    test_gen = ImageDataGenerator(**configs['preprocess']['test'])
     test_data = test_gen.flow_from_dataframe(dataframe=test,
                                             directory=args.image,
                                             x_col='filename',
                                             y_col='label',
                                             class_mode="categorical",
-                                            batch_size=int(configs['train_cfg']['batch_size']),
-                                            target_size=ast.literal_eval(configs['train_cfg']['target_size']))
+                                            batch_size=configs['train_cfg']['batch_size'],
+                                            target_size=configs['train_cfg']['target_size'])
     models_dict = {'model_{}'.format(j) : {'checkpoint':os.path.join(args.dir, 'model_{}'.format(j), 'checkpoint'),'weights': model_builder(configs['train_cfg']['backbone'])} for j in range(1,num_of_models+1)}
 
-    for i in range(1,int(configs['train_cfg']['epochs'])+1):
+    for i in range(1,configs['train_cfg']['epochs']+1):
         
         for j in range(1,num_of_models+1):
             epoch_checkpoint = os.path.join(models_dict['model_{}'.format(j)]['checkpoint'], 'cp-{:04d}.ckpt'.format(i))
