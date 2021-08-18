@@ -5,6 +5,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import pandas as pd
 import argparse
 import os
+import ast
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -32,23 +33,23 @@ def main():
     args = args_parser()
     configs = read_config(args.config)
 
-    num_of_models = len(os.listdir(args.dir))
 
     result = []
     test = pd.read_csv(configs['path']['test'])
-    test_gen = ImageDataGenerator(**configs['preprocess']['test'])
+    test['label'] = test['label'].astype('str')
+    test_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
     test_data = test_gen.flow_from_dataframe(dataframe=test,
                                             directory=args.image,
                                             x_col='filename',
                                             y_col='label',
                                             class_mode="categorical",
-                                            batch_size=configs['train_cfg']['batch_size'],
-                                            target_size=configs['train_cfg']['target_size'])
-    models_dict = {'model_{}'.format(j) : {'checkpoint':os.path.join(args.dir, 'model_{}'.format(j), 'checkpoint'),'weights': model_builder(configs['train_cfg']['backbone'])} for j in range(1,num_of_models+1)}
+                                            batch_size=int(configs['train_cfg']['batch_size']),
+                                            target_size=ast.literal_eval(configs['train_cfg']['target_size']))
+    models_dict = {'model_{}'.format(j) : {'checkpoint':os.path.join(args.dir, 'model_{}'.format(j), 'checkpoint'),'weights': model_builder(configs['train_cfg']['backbone'])} for j in range(1,4)}
 
-    for i in range(1,configs['train_cfg']['epochs']+1):
+    for i in range(1,int(configs['train_cfg']['epochs'])+1):
         
-        for j in range(1,num_of_models+1):
+        for j in range(1,4):
             epoch_checkpoint = os.path.join(models_dict['model_{}'.format(j)]['checkpoint'], 'cp-{:04d}.ckpt'.format(i))
             print(epoch_checkpoint)
             models_dict['model_{}'.format(j)]['weights'].load_weights(epoch_checkpoint)
@@ -62,7 +63,7 @@ def main():
 
         result.append(fusion_model.evaluate(test_data))
 
-        save_path = os.path.join(args.dir, 'fusion', 'checkpoint', 'fusion-{:04d}.ckpt'.format(i))
+        save_path = os.path.join(args.dir, 'fusion', args.mode, 'checkpoint', 'fusion-{:04d}.ckpt'.format(i))
         fusion_model.save_weights(save_path)
     
     pd.DataFrame(result, columns=['loss', 'acc']).to_csv(os.path.join(args.dir, 'fusion', 'evaluation.csv'), index=False)

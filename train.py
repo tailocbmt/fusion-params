@@ -4,7 +4,7 @@ from models import model_builder, update_params
 from utils import read_config, scheduler
 import argparse
 import pandas as pd
-
+import ast
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -34,11 +34,11 @@ def main():
     val['label'] = val['label'].astype('str')
     test['label'] = test['label'].astype('str')
 
-    train_gen = ImageDataGenerator(**configs['preprocess']['train'])
+    train_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['train']))
 
-    val_gen = ImageDataGenerator(**configs['preprocess']['test'])
+    val_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
 
-    test_gen = ImageDataGenerator(**configs['preprocess']['test'])
+    test_gen = ImageDataGenerator(**ast.literal_eval(configs['preprocess']['test']))
 
     training_data = train_gen.flow_from_dataframe(dataframe=train,
                                                 directory=args.dir,
@@ -46,8 +46,8 @@ def main():
                                                 x_col='filename',
                                                 y_col='label',
                                                 class_mode="categorical",
-                                                batch_size=configs['train_cfg']['batch_size'],
-                                                target_size=configs['train_cfg']['target_size'])
+                                                batch_size=int(configs['train_cfg']['batch_size']),
+                                                target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
     validation_data = val_gen.flow_from_dataframe(dataframe=val,
                                                 directory=args.dir,
@@ -55,23 +55,23 @@ def main():
                                                 x_col='filename',
                                                 y_col='label',
                                                 class_mode="categorical",
-                                                batch_size=configs['train_cfg']['batch_size'],
-                                                target_size=configs['train_cfg']['target_size'])
+                                                batch_size=int(configs['train_cfg']['batch_size']),
+                                                target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
     test_data = test_gen.flow_from_dataframe(dataframe=test,
                                             directory=args.dir,
                                             x_col='filename',
                                             y_col='label',
                                             class_mode="categorical",
-                                            batch_size=configs['train_cfg']['batch_size'],
-                                            target_size=configs['train_cfg']['target_size'])
+                                            batch_size=int(configs['train_cfg']['batch_size']),
+                                            target_size=ast.literal_eval(configs['train_cfg']['target_size']))
 
     lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=0)
 
     if configs['opt_cfg']['opt'] == 'adam':
-        opt = tf.keras.optimizers.Adam(learning_rate=configs['opt_cfg']['lr'])
+        opt = tf.keras.optimizers.Adam(learning_rate=float(configs['opt_cfg']['lr']))
     elif configs['opt_cfg']['opt'] == 'sgd':
-        opt = tf.keras.optimizers.SGD(learning_rate=configs['opt_cfg']['lr'])
+        opt = tf.keras.optimizers.SGD(learning_rate=float(configs['opt_cfg']['lr']))
     else:
         raise ValueError('Not support other type of optimizer') 
 
@@ -82,9 +82,9 @@ def main():
     models_dict = {}    
     for i in range(1,4):
         if configs['opt_cfg']['opt'] == 'adam':
-            opt = tf.keras.optimizers.Adam(learning_rate=configs['opt_cfg']['lr'])
+            opt = tf.keras.optimizers.Adam(learning_rate=float(configs['opt_cfg']['lr']))
         elif configs['opt_cfg']['opt'] == 'sgd':
-            opt = tf.keras.optimizers.SGD(learning_rate=configs['opt_cfg']['lr'])
+            opt = tf.keras.optimizers.SGD(learning_rate=float(configs['opt_cfg']['lr']))
         else:
             raise ValueError('Not support other type of optimizer')
 
@@ -104,7 +104,7 @@ def main():
                                                     mode='max')
 
         history = models_dict['model_{}'.format(i)].fit(training_data,
-                                                        epochs=configs['train_cfg']['epochs'],
+                                                        epochs=int(configs['train_cfg']['epochs']),
                                                         validation_data=validation_data,
                                                         callbacks=[history_logger, tb_callback, model_checkpoint, lr_schedule])
     
